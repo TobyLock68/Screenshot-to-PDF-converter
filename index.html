@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>A4 Landscape PDF Converter</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      padding: 24px 16px;
+      max-width: 480px;
+      margin: 0 auto;
+      background-color: #f2f2f7;
+      color: #1c1c1e;
+    }
+    .card {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 14px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+    h2 {
+      margin-top: 0;
+      font-size: 20px;
+    }
+    p {
+      color: #636366;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    input[type="file"] {
+      margin: 20px 0;
+      width: 100%;
+      font-size: 14px;
+    }
+    button {
+      background-color: #007aff;
+      color: white;
+      border: none;
+      padding: 16px;
+      width: 100%;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #aeaeb2;
+    }
+    #status {
+      margin-top: 18px;
+      font-size: 14px;
+      font-weight: 500;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Table Screenshot to A4 PDF</h2>
+    <p>Upload a cropped screenshot of your table. It will scale to fit an A4 Landscape page perfectly.</p>
+    
+    <input type="file" id="imageInput" accept="image/*">
+    <button id="convertBtn" onclick="processImage()">Convert & Download PDF</button>
+    
+    <div id="status"></div>
+  </div>
+
+  <script>
+    // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BETWEEN THE QUOTES BELOW
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXylY8J3qSY9AuCQk10PYeS-xlyxoHLbRvJx8UIs1ysLK5GwyYLq7Mlh5RHF6DihKL/exec";
+
+    async function processImage() {
+      const fileInput = document.getElementById('imageInput');
+      const status = document.getElementById('status');
+      const btn = document.getElementById('convertBtn');
+
+      if (!fileInput.files[0]) {
+        alert("Please select or take a screenshot first.");
+        return;
+      }
+
+      btn.disabled = true;
+      status.style.color = "#007aff";
+      status.innerText = "Processing & scaling image...";
+
+      const file = fileInput.files[0];
+      const reader = new FileReader();
+
+      reader.onload = async function(e) {
+        const base64Image = e.target.result;
+
+        try {
+          const response = await fetch(APPS_SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+              imageData: base64Image
+            })
+          });
+
+          const result = await response.json();
+
+          if (result.status === 'success') {
+            status.style.color = "#34c759";
+            status.innerText = "PDF Generated! Downloading...";
+            
+            // Create download link for PDF
+            const link = document.createElement('a');
+            link.href = "data:application/pdf;base64," + result.pdfBase64;
+            link.download = "Landscape_Table.pdf";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          } else {
+            status.style.color = "#ff3b30";
+            status.innerText = "Error: " + result.message;
+          }
+        } catch (err) {
+          status.style.color = "#ff3b30";
+          status.innerText = "Conversion failed. Please verify Web App URL.";
+        } finally {
+          btn.disabled = false;
+        }
+      };
+
+      reader.readAsDataURL(file);
+    }
+  </script>
+</body>
+</html>
